@@ -45,7 +45,7 @@ async def get_activation_metrics(db: AsyncSession = Depends(get_db)):
     # Top errors
     error_rows = await db.execute(
         select(
-            TelemetryEvent.metadata["status_code"].label("status_code"),
+            TelemetryEvent.event_metadata["status_code"].label("status_code"),
             func.count().label("count"),
         )
         .where(TelemetryEvent.event_type == "debug_triggered")

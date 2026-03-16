@@ -10,8 +10,7 @@ class Settings(BaseSettings):
     SMOLIFY_BASE_URL: str = "https://api.smolify.ai/v1"
 
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./devrel.db"
-    REDIS_URL: str = "redis://localhost:6379/0"
+    DATABASE_URL: str = "postgresql+asyncpg://localhost/devrel"
 
     # Vector DB
     CHROMA_HOST: str = "localhost"

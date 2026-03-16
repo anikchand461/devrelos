@@ -10,7 +10,7 @@ async def track_event(db, session_id: UUID, event_type: str, metadata: dict = {}
     event = TelemetryEvent(
         session_id=session_id,
         event_type=event_type,
-        metadata=metadata,
+        event_metadata=metadata,
     )
     db.add(event)
     # Flush without commit — caller commits the transaction

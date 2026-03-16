@@ -2,6 +2,7 @@
 DevRel-in-a-Box — FastAPI Application
 """
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -53,4 +54,4 @@ app.include_router(analytics.router,  prefix="/api/analytics", tags=["analytics"
 app.include_router(ingest.router,     prefix="/api/ingest",    tags=["ingest"])
 
 # ─── Static files (widget + dashboard) ───────────────────
-app.mount("/", StaticFiles(directory="../../frontend", html=True), name="frontend")
+app.mount("/", StaticFiles(directory=str(Path(__file__).resolve().parents[2] / "frontend"), html=True), name="frontend")

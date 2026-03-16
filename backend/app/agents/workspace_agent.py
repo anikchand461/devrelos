@@ -15,8 +15,8 @@ import uuid
 
 from app.models.schemas import (
     ExtractedIntent,
-    Requestly Collection,
-    Requestly Request,
+    RequestlyCollection,
+    RequestlyRequest,
     RequestHeader,
     EnvironmentVariable,
     RequestAssertion,
@@ -111,7 +111,7 @@ class WorkspaceGenerationAgent:
         self,
         intent: ExtractedIntent,
         include_tests: bool = True,
-    ) -> Requestly Collection:
+    ) -> RequestlyCollection:
         """
         Generate a complete Requestly collection for the given intent.
         """
@@ -158,7 +158,7 @@ class WorkspaceGenerationAgent:
         ) if include_tests else ""
         post_script = POST_RESPONSE_SCRIPT if include_tests else ""
 
-        request = Requestly Request(
+        request = RequestlyRequest(
             id=str(uuid.uuid4()),
             name=f"{intent.http_method} {intent.endpoint_path}",
             method=intent.http_method,
@@ -171,7 +171,7 @@ class WorkspaceGenerationAgent:
             assertions=assertions,
         )
 
-        return Requestly Collection(
+        return RequestlyCollection(
             name=f"{intent.api_name.title()} — {intent.goal[:50]}",
             description=intent.description,
             variables=env_vars,

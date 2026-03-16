@@ -85,7 +85,7 @@ class TelemetryEvent(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     session_id = Column(UUID(as_uuid=True), ForeignKey("developer_sessions.id"))
     event_type = Column(String, nullable=False, index=True)
-    metadata = Column(JSON, default=dict)
+    event_metadata = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
     session = relationship("DeveloperSession", back_populates="events")

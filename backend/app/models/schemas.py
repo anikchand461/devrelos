@@ -87,7 +87,7 @@ class RequestAssertion(BaseModel):
     operator: str = "equals"
 
 
-class Requestly Request(BaseModel):
+class RequestlyRequest(BaseModel):
     """Represents one request inside a Requestly collection."""
     id: str
     name: str
@@ -101,19 +101,19 @@ class Requestly Request(BaseModel):
     assertions: list[RequestAssertion] = []
 
 
-class Requestly Collection(BaseModel):
+class RequestlyCollection(BaseModel):
     """Full Requestly collection — importable JSON."""
     version: str = "1.0"
     name: str
     description: str = ""
     variables: list[EnvironmentVariable]
-    requests: list[Requestly Request]
+    requests: list[RequestlyRequest]
     auth: dict[str, Any] = {}
 
 
 class WorkspaceResponse(BaseModel):
     session_id: UUID
-    collection: Requestly Collection
+    collection: RequestlyCollection
     collection_json: str           # serialized for direct import
     import_url: str | None = None  # deep-link to open in Requestly
     code_snippets: dict[str, str]  # language → code string
