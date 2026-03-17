@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevRelOS – AI DevRel-in-a-Box</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-brand">
+      <div class="logo">⚡</div>
+      DevRelOS
+      <span class="text-xs text-muted" style="font-weight:400">AI DevRel Platform</span>
+    </div>
+    <nav class="header-nav">
+      <a href="#" data-page="chat"       onclick="showSection('chat');return false"       class="active">💬 Chat</a>
+      <a href="#" data-page="playground" onclick="showSection('playground');return false"       >🔌 Playground</a>
+      <a href="/analytics"                                                                       >📊 Analytics</a>
+      <a href="#" data-page="integrations" onclick="showSection('integrations');return false"   >🔗 Integrations</a>
+    </nav>
+    <div class="header-status">
+      <div class="status-dot"></div>
+      <span>Live</span>
+      <span class="text-dim">|</span>
+      <a href="/swagger" target="_blank" style="font-size:.78rem;color:var(--text-muted)">API Docs ↗</a>
+    </div>
+  </header>
+
+  <!-- ── Sidebar ────────────────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-section">Workspace</div>
+    <button class="sidebar-item active" data-section="chat" onclick="showSection('chat')">
+      <span class="icon">💬</span> Chat
+    </button>
+    <button class="sidebar-item" data-section="playground" onclick="showSection('playground')">
+      <span class="icon">🔌</span> API Playground
+    </button>
+    <button class="sidebar-item" data-section="integrations" onclick="showSection('integrations')">
+      <span class="icon">🔗</span> Integrations
+    </button>
+
+    <div class="sidebar-section">Mode</div>
+    <button class="sidebar-item" onclick="setMode('chat');showSection('chat')">
+      <span class="icon">🤖</span> AI Chat
+    </button>
+    <button class="sidebar-item" onclick="setMode('support');showSection('chat')">
+      <span class="icon">🎧</span> Support
+    </button>
+    <button class="sidebar-item" onclick="setMode('tutorial');showSection('chat')">
+      <span class="icon">📚</span> Tutorial
+    </button>
+    <button class="sidebar-item" onclick="setMode('docs');showSection('chat')">
+      <span class="icon">📄</span> Docs
+    </button>
+
+    <div class="sidebar-section">Providers</div>
+    <button class="sidebar-item" onclick="quickSend('Show me how to accept payments with Stripe')">
+      <span class="icon">💳</span> Stripe
+    </button>
+    <button class="sidebar-item" onclick="quickSend('Show me how to send SMS with Twilio')">
+      <span class="icon">📱</span> Twilio
+    </button>
+    <button class="sidebar-item" onclick="quickSend('Show me how to create a GitHub repository')">
+      <span class="icon">🐙</span> GitHub
+    </button>
+
+    <div class="sidebar-section">Quick Actions</div>
+    <button class="sidebar-item" onclick="quickSend('Charge $50 to a customer')">
+      <span class="icon">⚡</span> Charge $50
+    </button>
+    <button class="sidebar-item" onclick="quickSend('List all Stripe customers')">
+      <span class="icon">👥</span> List Customers
+    </button>
+    <button class="sidebar-item" onclick="quickSend('Send an SMS message')">
+      <span class="icon">💬</span> Send SMS
+    </button>
+    <button class="sidebar-item" onclick="quickSend('Create a new GitHub repo')">
+      <span class="icon">📁</span> New Repo
+    </button>
+  </aside>
+
+  <!-- ── Main ───────────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- CHAT SECTION -->
+    <div id="section-chat" class="section active">
+      <div class="chat-layout">
+
+        <!-- Left: conversation -->
+        <div class="chat-left">
+          <div id="chat-messages" class="chat-messages"></div>
+
+          <div class="chat-input-area">
+            <!-- Mode chips -->
+            <div class="mode-row">
+              <button class="mode-chip active" data-mode="chat"     onclick="setMode('chat')">🤖 Chat</button>
+              <button class="mode-chip"        data-mode="support"  onclick="setMode('support')">🎧 Support</button>
+              <button class="mode-chip"        data-mode="tutorial" onclick="setMode('tutorial')">📚 Tutorial</button>
+              <button class="mode-chip"        data-mode="docs"     onclick="setMode('docs')">📄 Docs</button>
+            </div>
+
+            <div class="input-row">
+              <!-- Voice btn -->
+              <button id="voice-btn" class="btn btn-icon" onclick="toggleVoice()" title="Voice input">
+                🎤
+              </button>
+
+              <!-- Text area -->
+              <textarea
+                id="chat-input"
+                class="chat-textarea"
+                placeholder="What do you want to build? (e.g. 'Charge $50 to a customer')"
+                rows="1"
+              ></textarea>
+
+              <!-- Send btn -->
+              <button id="send-btn" class="btn btn-primary" onclick="sendChat()">
+                ➤ Send
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: request / response panel -->
+        <div class="chat-right">
+          <div class="panel-tabs">
+            <button class="panel-tab active" data-tab="request" onclick="switchPanelTab('request')">API Request</button>
+            <button class="panel-tab"        data-tab="docs"    onclick="switchPanelTab('docs')">Docs / Tutorial</button>
+            <button class="panel-tab"        data-tab="intent"  onclick="switchPanelTab('intent')">Intent</button>
+          </div>
+
+          <div class="panel-content">
+            <!-- Request Pane -->
+            <div id="pane-request" class="panel-pane active">
+              <p class="text-muted text-sm">Ask a question to see the generated API request here.</p>
+            </div>
+
+            <!-- Docs Pane -->
+            <div id="pane-docs" class="panel-pane">
+              <p class="text-muted text-sm">Documentation and tutorials will appear here.</p>
+            </div>
+
+            <!-- Intent Pane -->
+            <div id="pane-intent" class="panel-pane">
+              <p class="text-muted text-sm">Parsed intent will appear here after your first message.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /chat section -->
+
+    <!-- PLAYGROUND SECTION -->
+    <div id="section-playground" class="section">
+      <div class="tabs-bar">
+        <span style="font-weight:600;color:var(--text);padding:6px 8px">🔌 API Playground</span>
+        <span class="text-muted text-sm" style="padding:6px 8px">Click a provider to explore its API</span>
+      </div>
+      <div class="content-section">
+        <div id="providers-grid" class="providers-grid"></div>
+      </div>
+    </div>
+
+    <!-- INTEGRATIONS SECTION -->
+    <div id="section-integrations" class="section">
+      <div class="tabs-bar">
+        <span style="font-weight:600;color:var(--text);padding:6px 8px">🔗 Integrations</span>
+      </div>
+      <div class="content-section">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;max-width:900px">
+
+          <!-- Slack -->
+          <div class="api-card">
+            <div class="api-card-header">
+              <span style="font-size:1.3rem">🔷</span>
+              <span style="font-weight:600">Slack</span>
+            </div>
+            <div class="api-card-body">
+              <p class="text-sm text-muted" style="margin-bottom:12px">
+                Send messages to your Slack workspace via Incoming Webhooks.
+              </p>
+              <p class="text-xs text-muted" style="margin-bottom:12px">
+                Configure <code>SLACK_WEBHOOK_URL</code> in your <code>.env</code> file.
+              </p>
+              <button class="btn btn-primary btn-sm" onclick="sendIntegration('slack')">Send Test Message</button>
+            </div>
+          </div>
+
+          <!-- Discord -->
+          <div class="api-card">
+            <div class="api-card-header">
+              <span style="font-size:1.3rem">🎮</span>
+              <span style="font-weight:600">Discord</span>
+            </div>
+            <div class="api-card-body">
+              <p class="text-sm text-muted" style="margin-bottom:12px">
+                Post notifications to Discord channels via Webhook.
+              </p>
+              <p class="text-xs text-muted" style="margin-bottom:12px">
+                Configure <code>DISCORD_WEBHOOK_URL</code> in your <code>.env</code> file.
+              </p>
+              <button class="btn btn-primary btn-sm" onclick="sendIntegration('discord')">Send Test Message</button>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="api-card">
+            <div class="api-card-header">
+              <span style="font-size:1.3rem">📧</span>
+              <span style="font-weight:600">Email (SMTP)</span>
+            </div>
+            <div class="api-card-body">
+              <p class="text-sm text-muted" style="margin-bottom:12px">
+                Send HTML emails via SMTP (Gmail, Sendgrid, etc.).
+              </p>
+              <p class="text-xs text-muted" style="margin-bottom:12px">
+                Configure <code>SMTP_*</code> vars in your <code>.env</code> file.
+              </p>
+              <button class="btn btn-primary btn-sm" onclick="sendIntegration('email')">Send Test Email</button>
+            </div>
+          </div>
+
+          <!-- Broadcast -->
+          <div class="api-card">
+            <div class="api-card-header">
+              <span style="font-size:1.3rem">📡</span>
+              <span style="font-weight:600">Broadcast All</span>
+            </div>
+            <div class="api-card-body">
+              <p class="text-sm text-muted" style="margin-bottom:12px">
+                Send a message simultaneously to all configured channels (Slack + Discord).
+              </p>
+              <button class="btn btn-outline btn-sm" onclick="broadcastTest()">Broadcast Test</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Schema Management -->
+        <div style="margin-top:28px;max-width:800px">
+          <h2 style="margin-bottom:16px">⚙️ API Schema Management</h2>
+          <div class="api-card">
+            <div class="api-card-header">Add Custom API Schema</div>
+            <div class="api-card-body">
+              <p class="text-sm text-muted" style="margin-bottom:12px">
+                POST to <code>/api/schemas</code> with your OpenAPI-like schema to add a new provider.
+              </p>
+              <button class="btn btn-outline btn-sm" onclick="showSection('playground')">View Existing Schemas →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main><!-- /main -->
+</div><!-- /layout -->
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script src="/static/js/app.js"></script>
+<script>
+// ── Extra page-specific JS ────────────────────────────────────────────────────
+
+// Populate intent pane when response arrives
+const _origSendChat = sendChat;
+// Patch to also update intent pane
+const _origRenderRequestPanel = renderRequestPanel;
+window.renderRequestPanel = function(req, fullRes) {
+  _origRenderRequestPanel(req, fullRes);
+  if (fullRes && fullRes.intent) {
+    const pane = document.getElementById("pane-intent");
+    if (pane) {
+      pane.innerHTML = `
+        <div class="api-card">
+          <div class="api-card-header"><span>Parsed Intent</span></div>
+          <div class="api-card-body">
+            <pre style="margin:0;background:transparent;border:none;padding:0;color:var(--accent)">${escapeHtml(JSON.stringify(fullRes.intent, null, 2))}</pre>
+          </div>
+        </div>
+        ${fullRes.profile ? `<div class="api-card" style="margin-top:8px">
+          <div class="api-card-header"><span>Personalization Profile</span></div>
+          <div class="api-card-body">
+            <pre style="margin:0;background:transparent;border:none;padding:0;color:var(--text-muted)">${escapeHtml(JSON.stringify(fullRes.profile, null, 2))}</pre>
+          </div>
+        </div>` : ""}
+      `;
+    }
+  }
+};
+
+async function broadcastTest() {
+  const msg = prompt("Message to broadcast to all channels:");
+  if (!msg) return;
+  try {
+    const res = await api("/api/integrations/broadcast", "POST", {
+      channel: "all", message: msg, session_id: STATE.sessionId
+    });
+    toast("Broadcast sent! Check Slack + Discord.", "success");
+  } catch (err) {
+    toast(err.message, "error");
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevRelOS – Analytics Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .analytics-layout {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .analytics-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      background: var(--bg);
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .kpi-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 16px;
+      transition: border .2s;
+    }
+    .kpi-box:hover { border-color: var(--primary); }
+    .kpi-icon { font-size: 1.5rem; margin-bottom: 8px; }
+    .kpi-label { font-size: .72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+    .kpi-value { font-size: 1.6rem; font-weight: 700; }
+    .kpi-sub   { font-size: .75rem; color: var(--text-dim); margin-top: 4px; }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .tables-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .card-title {
+      padding: 12px 16px;
+      font-size: .85rem;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-panel);
+    }
+    .card-body { padding: 16px; }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .82rem;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: var(--text-muted); }
+    .stat-val   { font-family: var(--mono); font-weight: 600; }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 3px;
+      transition: width .6s ease;
+    }
+
+    .refresh-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      font-size: .78rem;
+      cursor: pointer;
+      font-family: var(--font);
+    }
+    .refresh-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    @media (max-width: 900px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .tables-grid  { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="analytics-layout">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-brand">
+      <div class="logo">⚡</div>
+      DevRelOS
+      <span class="text-xs text-muted" style="font-weight:400">Analytics Dashboard</span>
+    </div>
+    <nav class="header-nav">
+      <a href="/">💬 Chat</a>
+      <a href="/#playground" onclick="localStorage.setItem('goto','playground')">🔌 Playground</a>
+      <a href="/analytics" class="active">📊 Analytics</a>
+    </nav>
+    <div class="header-status">
+      <div class="status-dot"></div>
+      <span id="last-updated" class="text-xs text-muted">Loading…</span>
+    </div>
+  </header>
+
+  <div class="analytics-body">
+
+    <!-- Loading -->
+    <div id="loading-state" style="padding:40px;text-align:center;color:var(--text-muted)">
+      <div class="typing-indicator" style="justify-content:center;margin-bottom:12px">
+        <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+      </div>
+      Loading analytics data…
+    </div>
+
+    <!-- Dashboard content (hidden until loaded) -->
+    <div id="dashboard" class="hidden">
+
+      <!-- KPI Row -->
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <!-- Conversion Rate Banner -->
+      <div id="conversion-banner" class="api-card" style="margin-bottom:24px;padding:16px 20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+          <div>
+            <div class="text-xs text-muted" style="margin-bottom:4px">OVERALL CONVERSION RATE</div>
+            <div id="cr-value" style="font-size:2.4rem;font-weight:800"></div>
+          </div>
+          <div style="flex:1;min-width:200px;max-width:400px">
+            <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--text-muted);margin-bottom:6px">
+              <span>Successful calls</span>
+              <span id="cr-ratio"></span>
+            </div>
+            <div class="progress-bar"><div id="cr-bar" class="progress-fill" style="width:0%"></div></div>
+          </div>
+          <button class="refresh-btn" onclick="loadAnalytics()">🔄 Refresh</button>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="card-title">
+            📈 Daily Activity – Last 14 Days
+            <span id="daily-total" class="text-xs text-muted"></span>
+          </div>
+          <div class="card-body">
+            <canvas id="chart-daily" style="width:100%;height:200px"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="card-title">🔌 Provider Breakdown</div>
+          <div class="card-body">
+            <canvas id="chart-providers" style="width:100%;height:200px"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Second charts row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0 24px">
+        <div class="chart-card">
+          <div class="card-title">⚡ Response Time Distribution</div>
+          <div class="card-body">
+            <canvas id="chart-rt" style="width:100%;height:180px"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="card-title">✅ / ❌ Success vs Failure</div>
+          <div class="card-body">
+            <canvas id="chart-sf" style="width:100%;height:180px"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tables -->
+      <div class="tables-grid">
+        <div class="chart-card">
+          <div class="card-title">🏆 Top Endpoints</div>
+          <div class="card-body" id="table-endpoints"></div>
+        </div>
+        <div class="chart-card">
+          <div class="card-title">⚠️ Error Frequency</div>
+          <div class="card-body" id="table-errors"></div>
+        </div>
+        <div class="chart-card">
+          <div class="card-title">📋 Recent Activity</div>
+          <div class="card-body" id="table-recent"></div>
+        </div>
+      </div>
+
+    </div><!-- /dashboard -->
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="/static/js/app.js"></script>
+<script>
+// Override showSection for standalone analytics page
+window.showSection = () => {};
+
+async function loadAnalytics() {
+  const loading  = document.getElementById("loading-state");
+  const dash     = document.getElementById("dashboard");
+  loading.classList.remove("hidden");
+  dash.classList.add("hidden");
+
+  try {
+    const res = await fetch("/api/analytics");
+    const data = await res.json();
+    renderDashboard(data);
+    dash.classList.remove("hidden");
+    loading.classList.add("hidden");
+    document.getElementById("last-updated").textContent =
+      "Updated " + new Date().toLocaleTimeString();
+  } catch (err) {
+    loading.innerHTML = `<p style="color:var(--error)">Failed to load analytics: ${err.message}</p>`;
+  }
+}
+
+function renderDashboard(data) {
+  const cr = data.conversion_rate || 0;
+
+  // KPIs
+  const kpis = [
+    { icon: "📊", label: "Total Interactions", value: data.total_interactions, sub: "all time" },
+    { icon: "👥", label: "Unique Sessions",    value: data.total_sessions,     sub: "developers" },
+    { icon: "✅", label: "Successful Calls",   value: data.successful_executions, color: "var(--success)" },
+    { icon: "❌", label: "Failed Calls",       value: data.failed_executions,  color: "var(--error)" },
+    { icon: "⚡", label: "Avg Response",       value: data.avg_response_time_ms + "ms", sub: "per call" },
+    { icon: "🕐", label: "Time to 1st Call",   value: data.avg_first_call_time_ms + "ms", sub: "avg" },
+  ];
+
+  document.getElementById("kpi-grid").innerHTML = kpis.map(k => `
+    <div class="kpi-box">
+      <div class="kpi-icon">${k.icon}</div>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value" style="color:${k.color || "var(--text)"}">${k.value ?? 0}</div>
+      ${k.sub ? `<div class="kpi-sub">${k.sub}</div>` : ""}
+    </div>`).join("");
+
+  // Conversion banner
+  document.getElementById("cr-value").textContent = cr + "%";
+  document.getElementById("cr-value").style.color =
+    cr >= 70 ? "var(--success)" : cr >= 40 ? "var(--warning)" : "var(--error)";
+  const total = (data.successful_executions || 0) + (data.failed_executions || 0);
+  document.getElementById("cr-ratio").textContent =
+    `${data.successful_executions} / ${total} calls`;
+  setTimeout(() => {
+    document.getElementById("cr-bar").style.width = Math.min(cr, 100) + "%";
+  }, 100);
+
+  // Daily chart
+  const daily = data.daily_activity || [];
+  drawBarChartAnalytics("chart-daily",
+    daily.map(d => d.day?.slice(5) || ""),
+    daily.map(d => d.cnt),
+    "Interactions per day"
+  );
+  document.getElementById("daily-total").textContent =
+    `${daily.reduce((a,b) => a + b.cnt, 0)} total`;
+
+  // Provider donut
+  const providers = data.provider_breakdown || [];
+  drawDonutChartAnalytics("chart-providers",
+    providers.map(p => p.api_provider || "unknown"),
+    providers.map(p => p.cnt)
+  );
+
+  // Response time (simulated bucket chart from avg)
+  const rtBuckets = ["<100ms", "100-300ms", "300-700ms", ">700ms"];
+  const avg = data.avg_response_time_ms || 0;
+  const rtVals = avg < 100 ? [70, 20, 7, 3] :
+                 avg < 300 ? [20, 55, 20, 5] :
+                 avg < 700 ? [10, 25, 50, 15] :
+                             [5,  15, 30, 50];
+  drawBarChartAnalytics("chart-rt", rtBuckets, rtVals, "% of calls");
+
+  // Success/failure
+  drawDonutChartAnalytics("chart-sf",
+    ["Success", "Failed"],
+    [data.successful_executions || 0, data.failed_executions || 0]
+  );
+
+  // Endpoints table
+  const epContainer = document.getElementById("table-endpoints");
+  epContainer.innerHTML = (data.endpoint_usage || []).slice(0, 8).map(e => `
+    <div class="stat-row">
+      <div>
+        <div class="stat-label" style="font-family:var(--mono)">${e.endpoint || "-"}</div>
+        <div class="text-xs text-muted">${e.api_provider || ""}</div>
+      </div>
+      <div class="stat-val">${e.cnt}</div>
+    </div>`).join("") || `<p class="text-sm text-muted">No endpoint data yet</p>`;
+
+  // Errors table
+  const errContainer = document.getElementById("table-errors");
+  errContainer.innerHTML = (data.error_frequency || []).slice(0, 8).map(e => `
+    <div class="stat-row">
+      <span class="stat-label" style="color:var(--error)">${e.error_code || "unknown"}</span>
+      <span class="stat-val">${e.cnt}</span>
+    </div>`).join("") || `<p class="text-sm" style="color:var(--success)">🎉 No errors recorded!</p>`;
+
+  // Recent activity (daily reversed)
+  const recentContainer = document.getElementById("table-recent");
+  recentContainer.innerHTML = daily.slice(-7).reverse().map(d => `
+    <div class="stat-row">
+      <span class="stat-label">${d.day || ""}</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="stat-val">${d.cnt}</span>
+        <div class="progress-bar" style="width:60px">
+          <div class="progress-fill" style="width:${Math.min((d.cnt / (Math.max(...daily.map(x=>x.cnt),1))) * 100, 100)}%"></div>
+        </div>
+      </div>
+    </div>`).join("") || `<p class="text-sm text-muted">No recent activity</p>`;
+}
+
+// Canvas chart helpers for analytics page
+function drawBarChartAnalytics(id, labels, values, label) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const W = canvas.offsetWidth || 400, H = 200;
+  canvas.width = W; canvas.height = H;
+
+  const max  = Math.max(...values, 1);
+  const pad  = { top: 20, right: 10, bottom: 30, left: 36 };
+  const cW   = W - pad.left - pad.right;
+  const cH   = H - pad.top  - pad.bottom;
+  const bW   = labels.length ? (cW / labels.length) * .65 : 20;
+  const gap  = labels.length ? (cW / labels.length) * .35 : 5;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = "#1a1d28"; ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = "#2a2e3f"; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (cH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+    ctx.fillStyle = "#64748b"; ctx.font = "10px Inter"; ctx.textAlign = "right";
+    ctx.fillText(Math.round(max - (max / 4) * i), pad.left - 4, y + 4);
+  }
+
+  labels.forEach((lbl, i) => {
+    const x    = pad.left + i * (bW + gap);
+    const bH   = values[i] ? (values[i] / max) * cH : 1;
+    const y    = pad.top + cH - bH;
+
+    const grad = ctx.createLinearGradient(0, y, 0, y + bH);
+    grad.addColorStop(0, "#6366f1"); grad.addColorStop(1, "#22d3ee");
+    ctx.fillStyle = grad;
+    if (ctx.roundRect) ctx.roundRect(x, y, bW, bH, [3,3,0,0]);
+    else ctx.rect(x, y, bW, bH);
+    ctx.fill();
+
+    ctx.fillStyle = "#64748b"; ctx.font = "9px Inter"; ctx.textAlign = "center";
+    ctx.fillText(lbl, x + bW / 2, H - 6);
+  });
+}
+
+function drawDonutChartAnalytics(id, labels, values) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const W = canvas.offsetWidth || 300, H = 200;
+  canvas.width = W; canvas.height = H;
+
+  const total  = values.reduce((a,b) => a+b, 0) || 1;
+  const cx     = W * .38, cy = H / 2;
+  const r      = Math.min(cx, cy) - 15;
+  const inner  = r * .58;
+  const colors = ["#6366f1","#22d3ee","#f59e0b","#22c55e","#ef4444","#a78bfa"];
+
+  ctx.fillStyle = "#1a1d28"; ctx.fillRect(0, 0, W, H);
+
+  if (!values.length || !values.some(v => v > 0)) {
+    ctx.fillStyle = "#64748b"; ctx.font = "12px Inter"; ctx.textAlign = "center";
+    ctx.fillText("No data yet", cx, cy); return;
+  }
+
+  let angle = -Math.PI / 2;
+  values.forEach((val, i) => {
+    if (!val) return;
+    const slice = (val / total) * 2 * Math.PI;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, angle, angle + slice);
+    ctx.closePath(); ctx.fillStyle = colors[i % colors.length]; ctx.fill();
+    angle += slice;
+  });
+
+  ctx.beginPath(); ctx.arc(cx, cy, inner, 0, 2*Math.PI);
+  ctx.fillStyle = "#1a1d28"; ctx.fill();
+  ctx.fillStyle = "#e2e8f0"; ctx.font = "bold 13px Inter"; ctx.textAlign = "center";
+  ctx.fillText(total, cx, cy + 5);
+
+  const legendX = W * .6;
+  labels.slice(0, 5).forEach((lbl, i) => {
+    if (!values[i]) return;
+    const ly = 28 + i * 28;
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fillRect(legendX, ly, 12, 12);
+    ctx.fillStyle = "#94a3b8"; ctx.font = "11px Inter"; ctx.textAlign = "left";
+    const pct = Math.round((values[i] / total) * 100);
+    ctx.fillText(`${lbl} ${pct}%`, legendX + 16, ly + 10);
+  });
+}
+
+// Load on page ready
+document.addEventListener("DOMContentLoaded", loadAnalytics);
+
+// Auto-refresh every 30 seconds
+setInterval(loadAnalytics, 30000);
+</script>
+</body>
+</html>
